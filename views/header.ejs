@@ -20,6 +20,18 @@
   <div class="fixed-top">
     <!-- navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="navbar-brand">
+        <a>Budget Tracker</a>
+      </div>
+      <div class="navbar-text navbar-date">
+        <a> <%= listTitle %> </a>
+      </div>
+      <div class="navbar-text navbar-date-picker">
+        <form class="item" action="/change-date" method="post">
+          <input type="month" id="start" name="datePicker" min="2020-01" value="">
+          <button class="budget-date-picker" type="submit" name="datePickerSubmit">Go</button>
+        </form>
+      </div>
       <div class="collapse navbar-collapse" id="navbarToggler">
         <ul class="navbar-nav ml-auto">
           <li class="nav-item dropdown">

@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
 app.use(session({
-  secret: "nf238r9724hr43bq438772g28g",
+  secret: process.env.SECRET,
   resave: false,
   saveUninitialized: false
 }));
@@ -25,7 +25,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/todolistDB", {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect("mongodb://" + process.env.DB_HOST + ":27017/budgetDB", {useNewUrlParser: true, useUnifiedTopology: true});
 mongoose.set("useCreateIndex", true);
 
 const userSchema = new mongoose.Schema({
@@ -54,7 +54,6 @@ const listSchema = {
   items: [itemsSchema]
 };
 const Item = mongoose.model("Item", itemsSchema);
-const List = mongoose.model("List", listSchema);
 const workItems = [];
 
 app.get("/home", function(req, res) {
@@ -69,21 +68,26 @@ app.get("/register", function(req, res) {
   res.render("register");
 });
 
+app.get("/logout", function(req, res) {
+  current_user = "";
+  req.logout();
+  res.redirect("/home");
+});
+
 var current_user = "";
-var list_summary = [];
-var grouped_totals = [];
-var month_total = [];
+var month = date.getMonth();
+var year = date.getYear();
+var month_year = date.getMonthYear();
 app.get("/", function(req, res) {
   if (!req.isAuthenticated()) {
     res.redirect("/home");
   }
-  const day = date.getDate();
-  const month = date.getMonth();
-  const year = date.getYear();
-  const month_year = date.getMonthYear();
-  //https://stackoverflow.com/questions/18299749/node-js-express-mongodb-multiple-collections
-  // Get list of expenses this month
+  var list_summary = [];
+  var grouped_totals = [];
+  var month_total = [];
   var queries = [];
+  const day = date.getDate();
+  // Get list of expenses this month
   queries.push(function (cb) {
     Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$project": { "name":1, "type":1, "day": 1, "month": 1, "year": 1, "cost": { $divide: [ "$cost", 100 ] } } } ], function(err, items) {
       if (err) {
@@ -124,7 +128,6 @@ app.get("/", function(req, res) {
   });
 
   async.parallel(queries, function(err, docs) {
-    // if any query fails
     if (err) {
         throw err;
     }
@@ -144,43 +147,15 @@ app.post("/", function(req, res){
   const listTitle = req.body.list;
   const item = new Item({
     name: req.body.newItem,
-    cost: req.body.itemCost * 100,
+    cost: req.body.itemCost * 100, // record cost in cents
     type: req.body.itemType,
     day: req.body.purchaseDate.split("/")[1],
     month: req.body.purchaseDate.split("/")[0],
     year: req.body.purchaseDate.split("/")[2],
     user: current_user
   });
-  if (listTitle === day) {
-    item.save();
-    res.redirect("/");
-  } else {
-    List.findOne({name: listTitle}, function(err, doc) {
-      if (err) {
-        console.log(err);
-      } else if (doc !== null) {
-        doc.items.push(item);
-        doc.save();
-        res.redirect("/" + listTitle);
-      } else {
-        const list = new List({
-          name: listTitle,
-          items: [item]
-        });
-        list.save();
-        res.redirect("/" + listTitle);
-      }
-    });
-  }
-});
-
-app.get("/logout", function(req, res) {
-  current_user = "";
-  list_summary = [];
-  grouped_totals = [];
-  month_total = [];
-  req.logout();
-  res.redirect("/home");
+  item.save();
+  res.redirect("/");
 });
 
 app.post("/register", function(req, res) {
@@ -208,6 +183,9 @@ app.post("/login", function(req, res) {
       console.log(err);
     } else {
       passport.authenticate("local")(req, res, function() {
+        month = date.getMonth();
+        year = date.getYear();
+        month_year = date.getMonthYear();
         res.redirect("/");
       });
     }
@@ -217,25 +195,23 @@ app.post("/login", function(req, res) {
 app.post("/delete", function(req, res) {
   const day = date.getDate();
   const listTitle = req.body.listName;
-  if (listTitle === day) {
-    Item.deleteOne({_id: req.body.checkbox}, function(err) {
-      if (err) {
-        console.log(err);
-      } else {
-        console.log(req.body.checkbox + " deleted successfully.");
-        res.redirect("/");
-      }
-    });
-  } else {
-    List.findOneAndUpdate({name: listTitle}, {$pull: {items: {_id: req.body.checkbox}}}, function(err) {
-      if (err) {
-        console.log(err);
-      } else {
-        console.log(req.body.checkbox + " deleted successfully.");
-        res.redirect("/" + listTitle);
-      }
-    });
-  }
+  Item.deleteOne({_id: req.body.checkbox}, function(err) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(req.body.checkbox + " deleted successfully.");
+      res.redirect("/");
+    }
+  });
+});
+
+app.post("/change-date", function(req, res) {
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+  year = Number(req.body.datePicker.split("-")[0]);
+  month = Number(req.body.datePicker.split("-")[1]);
+  month_year = monthNames[month - 1] + " " + year;
+  res.redirect("/");
 });
 
 app.listen(3000, function() {

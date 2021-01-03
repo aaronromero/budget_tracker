@@ -15,7 +15,7 @@ exports.getMonth = function() {
   const today = new Date();
   const options = {
     month: "numeric"
-  }
+  };
   return Number(today.toLocaleDateString("en-US", options));
 };
 

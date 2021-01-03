@@ -102,7 +102,7 @@ app.get("/", function(req, res) {
   });
   // Get grouped monthly costs 
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "cost": { "$sum": '$cost' } } }, { "$project": { "cost": { $divide: [ "$cost", 100 ] } } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { $divide: [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
@@ -115,7 +115,7 @@ app.get("/", function(req, res) {
   });
   // Get overall monthly cost
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": null, "cost": { "$sum": '$cost' } } }, { "$project": { "cost": { $divide: [ "$cost", 100 ] } } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": null, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { $divide: [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {

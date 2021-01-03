@@ -1,0 +1,63 @@
+<%- include("header") -%>
+
+  <div class="box" id="heading">
+    <h1>Budget Summary</h1>
+    <h3> <%= listTitle %> </h3>
+  </div>
+
+  <div class="box">
+    <% newListItems.forEach(function(item) { %>
+      <form class="" action="/delete" method="post">
+        <div class="item">
+          <input type="checkbox" onChange="this.form.submit()" name="checkbox" value="<%= item._id %>">
+          <p class="item"><%=  item.name  %></p>
+          <p class="item"><%=  item.type  %></p>
+          <p class="item"><%=  "$" + item.cost  %></p>
+          <p class="item"><%=  item.month + ' - ' + item.day + ' - ' + item.year  %></p>
+        </div>
+        <input type="hidden" name="listName" value="<%= listTitle %>">
+      </form>
+      <% }) %>
+
+      <form class="item" action="/" method="post">
+        <input class="listItem" type="text" name="newItem" placeholder="New Item" autocomplete="off">
+        <input class="listItem" type="text" name="itemType" placeholder="Category" autocomplete="off">
+        <input type="number" name="itemCost" placeholder="Cost" autocomplete="off" min="0.01" step="0.01">
+        <div class="dates">
+          <div class="input-group mb-4">
+            <input class="form-control start_date listItem" type="text" name="purchaseDate" placeholder="Date" autocomplete="off" id="startdate_datepicker">
+          </div>
+        </div>
+        <script>
+          $("#startdate_datepicker").datepicker();
+        </script>
+        <button class="budget-summary" type="submit" name="list" value="<%= listTitle %>">+</button>
+      </form>
+  </div>
+
+  <div class="box" id="heading">
+    <h1> <%= monthlyTotalsTitle %> Totals </h1>
+  </div>
+
+  <div class="box">
+    <% groupedTotals.forEach(function(item) { %>
+      <form class="" action="/delete" method="post">
+        <div class="item">
+          <p class="item"><%=  item._id.type  %></p>
+          <p class="item"><%=  "$" + item.cost  %></p>
+        </div>
+        <input type="hidden" name="listName" value="<%= listTitle %>">
+      </form>
+      <% }) %>
+    <% monthlyTotals.forEach(function(item) { %>
+      <form class="" action="/delete" method="post">
+        <div class="item">
+          <p class="item">TOTAL</p>
+          <p class="item"><%=  "$" + item.cost  %></p>
+        </div>
+        <input type="hidden" name="listName" value="<%= listTitle %>">
+      </form>
+      <% }) %>
+  </div>
+
+<%- include("footer") -%>

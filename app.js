@@ -82,14 +82,17 @@ app.get("/", function(req, res) {
   if (!req.isAuthenticated()) {
     res.redirect("/home");
   }
+  // TODO move variables inside queries
   var list_summary = [];
   var grouped_totals = [];
   var month_total = [];
+  var month_running_total = [];
   var queries = [];
+  var known_categories = [];
   const day = date.getDate();
   // Get list of expenses this month
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$project": { "name":1, "type":1, "day": 1, "month": 1, "year": 1, "cost": { $divide: [ "$cost", 100 ] } } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$project": { "name":1, "type":1, "day": 1, "month": 1, "year": 1, "cost": { $divide: [ "$cost", 100 ] } } }, { "$sort": { "day": -1 } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
@@ -100,9 +103,24 @@ app.get("/", function(req, res) {
       cb(null, list_summary);
     });
   });
+  // Get monthly running totals
+  queries.push(function (cb) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } },  { "$group": { "_id": { "day": "$day" }, "cost": { "$sum": '$cost' } } }, { "$project": { "day": 1, "month": 1, "cost": { "$divide": [ "$cost", 100 ] } } }, { "$sort": { "_id.day": 1 } }], function(err, items) {
+      let total = 0;
+      if (err) {
+        console.log(err);
+      } else {
+        for (i=0; i<items.length; i++) {
+          total += Number(items[i]["cost"])
+          month_running_total[i] = { "year": year, "month": month - 1, "day": items[i]["_id"]["day"], "cost": total};
+        }
+      }
+      cb(null, month_running_total);
+    });
+  });
   // Get grouped monthly costs 
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { $divide: [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { "$divide": [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
@@ -115,7 +133,7 @@ app.get("/", function(req, res) {
   });
   // Get overall monthly cost
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": null, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { $divide: [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": null, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { "$divide": [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
@@ -126,18 +144,34 @@ app.get("/", function(req, res) {
       cb(null, month_total);
     });
   });
+  // Get list of known categories 
+  queries.push(function (cb) {
+    Item.aggregate( [ { "$match": { "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "count": { "$sum": 1 } } }, { "$sort": { "count": -1 } } ], function(err, items) {
+      if (err) {
+        console.log(err);
+      } else {
+        for (i=0; i<items.length; i++) {
+          known_categories[i] = items[i];
+        }
+      }
+      cb(null, known_categories);
+    });
+  });
 
   async.parallel(queries, function(err, docs) {
     if (err) {
         throw err;
     }
+    console.log(docs[1])
     res.render("list", {
       currentUser: current_user,
       listTitle: day,
       newListItems: docs[0],
+      monthlyRunningTotals: docs[1],
+      groupedTotals: docs[2],
+      monthlyTotals: docs[3],
       monthlyTotalsTitle: month_year,
-      monthlyTotals: docs[2],
-      groupedTotals: docs[1]
+      knownCategories: docs[4]
     });
   })
 });
@@ -146,9 +180,9 @@ app.post("/", function(req, res){
   const day = date.getDate();
   const listTitle = req.body.list;
   const item = new Item({
-    name: req.body.newItem,
+    name: _.startCase(_.toLower(req.body.newItem)),
     cost: req.body.itemCost * 100, // record cost in cents
-    type: req.body.itemType,
+    type: _.startCase(_.toLower(req.body.itemType)),
     day: req.body.purchaseDate.split("/")[1],
     month: req.body.purchaseDate.split("/")[0],
     year: req.body.purchaseDate.split("/")[2],

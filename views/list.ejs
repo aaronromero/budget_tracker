@@ -6,21 +6,17 @@
 
   <div class="box">
     <form class="item new-item" action="/" method="post">
-      <input class="listItem" type="text" name="newItem" placeholder="New Item" autocomplete="off">
-      <input class="listItem" type="text" name="itemType" placeholder="Category" list="Category" autocomplete="off">
+      <input class="listItem" type="text" name="newItem" placeholder="New Item" autocomplete="off" required>
+      <input class="listItem" type="text" name="itemType" placeholder="Category" list="Category" autocomplete="off" required>
       <datalist id="Category">
-        <option>Bill</option>
-        <option>Clothes</option>
-        <option>Food</option>
-        <option>Gas</option>
-        <option>Gift</option>
-        <option>Home</option>
-        <option>Non-Essential</option>
+        <% knownCategories.forEach(function(item) { %>
+          <option><%=  item._id.type  %></option>
+        <% }) %>
       </datalist>
-      <input type="number" name="itemCost" placeholder="Cost" autocomplete="off" min="0.01" step="0.01">
+      <input type="number" name="itemCost" placeholder="Cost" autocomplete="off" min="0.01" step="0.01" required>
       <div class="dates">
         <div class="input-group mb-4">
-          <input class="form-control start_date listItem" type="text" name="purchaseDate" placeholder="Date" autocomplete="off" id="startdate_datepicker">
+          <input class="form-control start_date listItem" type="text" name="purchaseDate" placeholder="Date" autocomplete="off" id="startdate_datepicker" required>
         </div>
       </div>
       <script>
@@ -83,5 +79,33 @@
       </form>
     <% }) %>
   </div>
+
+  <div class="box" id="heading">
+    <h1> <%= monthlyTotalsTitle %> Spending Chart </h1>
+  </div>
+
+  <div class="box">
+    <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+  </div>
+
+  <script type="text/javascript">
+  window.onload = function () {
+    var chart = new CanvasJS.Chart("chartContainer",
+    {
+      axisY:{
+        prefix: "$"
+      },
+      data: [{
+        type: "line",
+        dataPoints: []
+      }]
+    });
+    <% monthlyRunningTotals.forEach(function(item) { %>
+        chart.options.data[0].dataPoints.push({x: new Date(<%=  item.year  %>, <%=  item.month  %>, <%=  item.day  %>), y: <%=  item.cost  %>})
+    <% }) %>
+    chart.render();
+  }
+  </script>
+  <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 
 <%- include("footer") -%>

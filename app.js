@@ -162,7 +162,6 @@ app.get("/", function(req, res) {
     if (err) {
         throw err;
     }
-    console.log(docs[1])
     res.render("list", {
       currentUser: current_user,
       listTitle: day,

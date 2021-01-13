@@ -253,6 +253,7 @@ app.get("/statistics", function(req, res) {
       } else {
         for (i=0; i<items.length; i++) {
           monthly_spending[i] = items[i];
+          monthly_spending[i]["_id"]["month"] -= 1;
         }
       }
       cb(null, monthly_spending);

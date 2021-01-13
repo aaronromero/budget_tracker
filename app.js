@@ -49,11 +49,18 @@ const itemsSchema = new mongoose.Schema({
   year: Number,
   user: String
 });
-const listSchema = {
-  name: String,
-  items: [itemsSchema]
-};
 const Item = mongoose.model("Item", itemsSchema);
+
+const incomeSchema = new mongoose.Schema({
+  amount: Number,
+  type: String,
+  day: Number,
+  month: Number,
+  year: Number,
+  user: String
+});
+const Income = mongoose.model("Income", incomeSchema);
+
 const workItems = [];
 
 app.get("/home", function(req, res) {
@@ -92,7 +99,7 @@ app.get("/", function(req, res) {
   const day = date.getDate();
   // Get list of expenses this month
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$project": { "name":1, "type":1, "day": 1, "month": 1, "year": 1, "cost": { $divide: [ "$cost", 100 ] } } }, { "$sort": { "day": -1 } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$project": { "name":1, "type":1, "day": 1, "month": 1, "year": 1, "cost": { "$divide": [ "$cost", 100 ] } } }, { "$sort": { "day": -1 } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
@@ -175,6 +182,95 @@ app.get("/", function(req, res) {
   })
 });
 
+
+app.get("/payday", function(req, res) {
+  if (!req.isAuthenticated()) {
+    res.redirect("/home");
+  }
+  // TODO move variables inside queries
+  var list_summary = [];
+  var grouped_totals = [];
+  var month_total = [];
+  var month_running_total = [];
+  var queries = [];
+  var known_categories = [];
+  const day = date.getDate();
+  // Get income statements
+  queries.push(function (cb) {
+    const income_statements = [];
+    Income.aggregate( [ { "$match": { "user": current_user } }, { "$project": { "type":1, "day": 1, "month": 1, "year": 1, "amount": { "$divide": [ "$amount", 100 ] } } }, { "$sort": { "year": -1, "month": -1, "day": -1 } }, { "$limit": 10 } ], function(err, items) {
+      if (err) {
+        console.log(err);
+      } else {
+        for (i=0; i<items.length; i++) {
+          income_statements[i] = items[i];
+        }
+      }
+      cb(null, income_statements);
+    });
+  });
+  // Get list of known income types
+  queries.push(function (cb) {
+    const known_types = [];
+    Income.aggregate( [ { "$match": { "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "count": { "$sum": 1 } } }, { "$sort": { "count": -1 } } ], function(err, items) {
+      if (err) {
+        console.log(err);
+      } else {
+        for (i=0; i<items.length; i++) {
+          known_types[i] = items[i];
+        }
+      }
+      cb(null, known_types);
+    });
+  });
+  async.parallel(queries, function(err, docs) {
+    if (err) {
+        throw err;
+    }
+    res.render("payday", {
+      currentUser: current_user,
+      listTitle: day,
+      incomeStatements: docs[0],
+      knownTypes: docs[1]
+    });
+  })
+});
+
+app.get("/statistics", function(req, res) {
+  if (!req.isAuthenticated()) {
+    res.redirect("/home");
+  }
+  // TODO move variables inside queries
+  var month_running_total = [];
+  var queries = [];
+  const day = date.getDate();
+  // Get monthly running totals
+  queries.push(function (cb) {
+    const monthly_spending = [];
+    Item.aggregate( [ { "$match": { "user": current_user } },  { "$group": { "_id": { "year": "$year", "month": "$month" }, "cost": { "$sum": '$cost' } } }, { "$project": { "year": 1, "month": 1, "cost": { "$divide": [ "$cost", 100 ] } } }, { "$sort": { "_id.year": -1, "_id.month": -1 } }, { "$limit": 12 } ], function(err, items) {
+      if (err) {
+        console.log(err);
+      } else {
+        for (i=0; i<items.length; i++) {
+          monthly_spending[i] = items[i];
+        }
+      }
+      cb(null, monthly_spending);
+    });
+  });
+
+  async.parallel(queries, function(err, docs) {
+    if (err) {
+        throw err;
+    }
+    res.render("statistics", {
+      currentUser: current_user,
+      listTitle: day,
+      monthlySpending: docs[0]
+    });
+  })
+});
+
 app.post("/", function(req, res){
   const day = date.getDate();
   const listTitle = req.body.list;
@@ -191,6 +287,22 @@ app.post("/", function(req, res){
   res.redirect("/");
 });
 
+app.post("/payday", function(req, res){
+  const day = date.getDate();
+  const listTitle = req.body.list;
+  const income = new Income({
+    amount: req.body.amount * 100, // record cost in cents
+    type: _.startCase(_.toLower(req.body.paymentType)),
+    day: req.body.purchaseDate.split("/")[1],
+    month: req.body.purchaseDate.split("/")[0],
+    year: req.body.purchaseDate.split("/")[2],
+    user: current_user
+  });
+  income.save();
+  res.redirect("/payday");
+});
+
+//TODO check for duplicate users
 app.post("/register", function(req, res) {
   current_user = req.body.username;
   User.register({username: req.body.username}, req.body.password, function(err, user) {

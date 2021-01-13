@@ -64,6 +64,19 @@ h3 {
   border-bottom: 1px solid #000;
 }
 
+.header-icons {
+  margin-right: 3rem;
+}
+
+.header-icon {
+  color: #fff;
+  margin: 0 0.5rem;
+}
+
+.header-icon:hover {
+  color: #ffd700;
+}
+
 input:checked+p {
   text-decoration: line-through;
   text-decoration-color: #00CC7A;

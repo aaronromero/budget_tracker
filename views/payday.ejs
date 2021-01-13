@@ -1,0 +1,48 @@
+<%- include("header") -%>
+
+  <div class="box" id="heading">
+    <h1>Income Statements</h1>
+  </div>
+
+  <div class="box">
+    <form class="item new-item" action="/payday" method="post">
+      <input type="number" name="amount" placeholder="Amount" autocomplete="off" min="0.01" step="0.01" required>
+      <input class="listItem" type="text" name="paymentType" placeholder="Payment Type" list="Category" autocomplete="off" required>
+      <datalist id="Category">
+        <% knownTypes.forEach(function(item) { %>
+          <option><%=  item._id.type  %></option>
+        <% }) %>
+      </datalist>
+      <div class="dates">
+        <div class="input-group mb-4">
+          <input class="form-control start_date listItem" type="text" name="purchaseDate" placeholder="Received Date" autocomplete="off" id="startdate_datepicker" required>
+        </div>
+      </div>
+      <script>
+        $("#startdate_datepicker").datepicker({
+          orientation: "bottom"
+        });
+      </script>
+      <button class="budget-summary" type="submit" name="list">+</button>
+    </form>
+
+    <div class="item item-header">
+      <p class="item item-col-header">Amount</p>
+      <p class="item item-col-header">Payment Type</p>
+      <p class="item item-col-header">Received</p>
+    </div>
+
+    <% incomeStatements.forEach(function(item) { %>
+      <form class="" action="/delete" method="post">
+        <div class="item">
+          <input type="checkbox" onChange="this.form.submit()" name="checkbox" value="<%= item._id %>">
+          <p class="item"><%=  "$" + item.amount  %></p>
+          <p class="item"><%=  item.type  %></p>
+          <p class="item"><%=  item.month + ' - ' + item.day + ' - ' + item.year  %></p>
+        </div>
+        <input type="hidden" name="listName" value="<%= listTitle %>">
+      </form>
+    <% }) %>
+  </div>
+
+<%- include("footer") -%>

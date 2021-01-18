@@ -1,14 +1,9 @@
 <%- include("header") -%>
 
-  <div class="box" id="heading">
-    <h1> Monthly Spending </h1>
-  </div>
-  <div class="box">
-    <div id="chartContainer" style="height: 300px; width: 100%;"></div>
-  </div>
+
   <script type="text/javascript">
   window.onload = function () {
-    var chart = new CanvasJS.Chart("chartContainer",
+    var spendingChart = new CanvasJS.Chart("spendingChart",
     {
       axisY:{
         prefix: "$"
@@ -23,11 +18,45 @@
       }]
     });
     <% monthlySpending.forEach(function(item) { %>
-        chart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.cost  %>})
+        spendingChart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.cost  %>})
     <% }) %>
-    chart.render();
+    spendingChart.render();
+
+    var earningsChart = new CanvasJS.Chart("earningsChart",
+    {
+      axisY:{
+        prefix: "$"
+      },
+      axisX:{
+        interval: 1,
+        intervalType: "month"
+      },
+      data: [{
+        type: "column",
+        dataPoints: []
+      }]
+    });
+    <% monthlyNetEarnings.forEach(function(item) { %>
+        earningsChart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
+    <% }) %>
+    earningsChart.render();
   }
   </script>
+
+  <div class="box" id="heading">
+    <h1> Monthly Spending </h1>
+  </div>
+  <div class="box">
+    <div id="spendingChart" style="height: 300px; width: 100%;"></div>
+  </div>
+
+  <div class="box" id="heading">
+    <h1> Monthly Net Earnings </h1>
+  </div>
+  <div class="box">
+    <div id="earningsChart" style="height: 300px; width: 100%;"></div>
+  </div>
+
   <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 
 <%- include("footer") -%>

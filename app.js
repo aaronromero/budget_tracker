@@ -244,7 +244,7 @@ app.get("/statistics", function(req, res) {
   var month_running_total = [];
   var queries = [];
   const day = date.getDate();
-  // Get monthly running totals
+  // Get monthly spending
   queries.push(function (cb) {
     const monthly_spending = [];
     Item.aggregate( [ { "$match": { "user": current_user } },  { "$group": { "_id": { "year": "$year", "month": "$month" }, "cost": { "$sum": '$cost' } } }, { "$project": { "year": 1, "month": 1, "cost": { "$divide": [ "$cost", 100 ] } } }, { "$sort": { "_id.year": -1, "_id.month": -1 } }, { "$limit": 12 } ], function(err, items) {
@@ -259,15 +259,43 @@ app.get("/statistics", function(req, res) {
       cb(null, monthly_spending);
     });
   });
+  // Get monthly Earnings
+  queries.push(function (cb) {
+    const monthly_earnings = [];
+    Income.aggregate( [ { "$match": { "user": current_user } },  { "$group": { "_id": { "year": "$year", "month": "$month" }, "earnings": { "$sum": '$amount' } } }, { "$project": { "year": 1, "month": 1, "earnings": { "$divide": [ "$earnings", 100 ] } } }, { "$sort": { "_id.year": -1, "_id.month": -1 } }, { "$limit": 12 } ], function(err, items) {
+      if (err) {
+        console.log(err);
+      } else {
+        for (i=0; i<items.length; i++) {
+          monthly_earnings[i] = items[i];
+          monthly_earnings[i]["_id"]["month"] -= 1;
+        }
+      }
+      cb(null, monthly_earnings);
+    });
+  });
 
   async.parallel(queries, function(err, docs) {
     if (err) {
         throw err;
     }
+    // calculate monthly net earnings
+    const monthly_net_earnings = [];
+    for (i=0; i<docs[1].length; i++) {
+      monthly_net_earnings[i] = docs[1][i];
+      for (j=0; j<docs[0].length; j++) {
+        if ( (docs[0][j]['_id']['month'] === docs[1][i]['_id']['month']) && ((docs[0][j]['_id']['year'] === docs[1][i]['_id']['year'])) ) {
+          monthly_net_earnings[i]['earnings'] -= docs[0][j]['cost'];
+          break;
+        }
+      }
+    }
+    
     res.render("statistics", {
       currentUser: current_user,
       listTitle: day,
-      monthlySpending: docs[0]
+      monthlySpending: docs[0],
+      monthlyNetEarnings: monthly_net_earnings
     });
   })
 });

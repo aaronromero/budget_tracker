@@ -279,7 +279,6 @@ app.get("/statistics", function(req, res) {
     if (err) {
         throw err;
     }
-    console.log(docs[1]);
     // calculate monthly net earnings
     const monthly_net_earnings = JSON.parse(JSON.stringify(docs[1]));
     for (i=0; i<docs[1].length; i++) {
@@ -290,7 +289,6 @@ app.get("/statistics", function(req, res) {
         };
       };
     };
-    console.log(docs[1]);
 
     res.render("statistics", {
       currentUser: current_user,

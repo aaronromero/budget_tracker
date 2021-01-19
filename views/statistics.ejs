@@ -22,6 +22,25 @@
     <% }) %>
     spendingChart.render();
 
+    var incomeChart = new CanvasJS.Chart("incomeChart",
+    {
+      axisY:{
+        prefix: "$"
+      },
+      axisX:{
+        interval: 1,
+        intervalType: "month"
+      },
+      data: [{
+        type: "column",
+        dataPoints: []
+      }]
+    });
+    <% monthlyIncome.forEach(function(item) { %>
+        incomeChart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
+    <% }) %>
+    incomeChart.render();
+
     var earningsChart = new CanvasJS.Chart("earningsChart",
     {
       axisY:{
@@ -51,7 +70,14 @@
   </div>
 
   <div class="box" id="heading">
-    <h1> Monthly Net Earnings </h1>
+    <h1> Monthly Income </h1>
+  </div>
+  <div class="box">
+    <div id="incomeChart" style="height: 300px; width: 100%;"></div>
+  </div>
+
+  <div class="box" id="heading">
+    <h1> Monthly Net Savings </h1>
   </div>
   <div class="box">
     <div id="earningsChart" style="height: 300px; width: 100%;"></div>

@@ -125,9 +125,9 @@ app.get("/", function(req, res) {
       cb(null, month_running_total);
     });
   });
-  // Get grouped monthly costs 
+  // Get grouped breakdown of costs 
   queries.push(function (cb) {
-    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { "$divide": [ "$cost", 100 ] }, "count": "$count" } } ], function(err, items) {
+    Item.aggregate( [ { "$match": { "year": year, "month": month, "user": current_user } }, { "$group": { "_id": { "type": "$type" }, "cost": { "$sum": '$cost' }, "count": { "$sum": 1 } } }, { "$project": { "cost": { "$divide": [ "$cost", 100 ] }, "count": "$count" } }, { "$sort": { "cost": -1 } } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
@@ -259,19 +259,19 @@ app.get("/statistics", function(req, res) {
       cb(null, monthly_spending);
     });
   });
-  // Get monthly Earnings
+  // Get monthly income
   queries.push(function (cb) {
-    const monthly_earnings = [];
+    const monthly_income = [];
     Income.aggregate( [ { "$match": { "user": current_user } },  { "$group": { "_id": { "year": "$year", "month": "$month" }, "earnings": { "$sum": '$amount' } } }, { "$project": { "year": 1, "month": 1, "earnings": { "$divide": [ "$earnings", 100 ] } } }, { "$sort": { "_id.year": -1, "_id.month": -1 } }, { "$limit": 12 } ], function(err, items) {
       if (err) {
         console.log(err);
       } else {
         for (i=0; i<items.length; i++) {
-          monthly_earnings[i] = items[i];
-          monthly_earnings[i]["_id"]["month"] -= 1;
+          monthly_income[i] = items[i];
+          monthly_income[i]["_id"]["month"] -= 1;
         }
       }
-      cb(null, monthly_earnings);
+      cb(null, monthly_income);
     });
   });
 
@@ -279,22 +279,24 @@ app.get("/statistics", function(req, res) {
     if (err) {
         throw err;
     }
+    console.log(docs[1]);
     // calculate monthly net earnings
-    const monthly_net_earnings = [];
+    const monthly_net_earnings = JSON.parse(JSON.stringify(docs[1]));
     for (i=0; i<docs[1].length; i++) {
-      monthly_net_earnings[i] = docs[1][i];
       for (j=0; j<docs[0].length; j++) {
-        if ( (docs[0][j]['_id']['month'] === docs[1][i]['_id']['month']) && ((docs[0][j]['_id']['year'] === docs[1][i]['_id']['year'])) ) {
+        if ( (docs[0][j]['_id']['month'] === docs[1][i]['_id']['month']) && (docs[0][j]['_id']['year'] === docs[1][i]['_id']['year']) ) {
           monthly_net_earnings[i]['earnings'] -= docs[0][j]['cost'];
           break;
-        }
-      }
-    }
-    
+        };
+      };
+    };
+    console.log(docs[1]);
+
     res.render("statistics", {
       currentUser: current_user,
       listTitle: day,
       monthlySpending: docs[0],
+      monthlyIncome: docs[1],
       monthlyNetEarnings: monthly_net_earnings
     });
   })

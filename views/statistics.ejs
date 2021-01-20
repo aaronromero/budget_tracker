@@ -29,6 +29,13 @@
         legendText: "Income",
         showInLegend: true,
         dataPoints: []
+      },
+      {
+        type: "column",
+        name: "Savings",
+        legendText: "Savings",
+        showInLegend: true,
+        dataPoints: []
       }
       ]
     });
@@ -38,41 +45,18 @@
     <% monthlyIncome.forEach(function(item) { %>
         spendingChart.options.data[1].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
     <% }) %>
-    spendingChart.render();
-
-    var earningsChart = new CanvasJS.Chart("earningsChart",
-    {
-      axisY:{
-        prefix: "$"
-      },
-      axisX:{
-        interval: 1,
-        intervalType: "month"
-      },
-      data: [{
-        type: "column",
-        dataPoints: []
-      }]
-    });
     <% monthlyNetEarnings.forEach(function(item) { %>
-        earningsChart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
+        spendingChart.options.data[2].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
     <% }) %>
-    earningsChart.render();
+    spendingChart.render();
   }
   </script>
 
   <div class="box" id="heading">
-    <h1> Monthly Spending </h1>
+    <h1> Monthly Tracking </h1>
   </div>
   <div class="box">
     <div id="spendingChart" style="height: 300px; width: 100%;"></div>
-  </div>
-
-  <div class="box" id="heading">
-    <h1> Monthly Net Savings </h1>
-  </div>
-  <div class="box">
-    <div id="earningsChart" style="height: 300px; width: 100%;"></div>
   </div>
 
   <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>

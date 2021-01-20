@@ -5,6 +5,7 @@
   window.onload = function () {
     var spendingChart = new CanvasJS.Chart("spendingChart",
     {
+      animationEnabled: true,
       axisY:{
         prefix: "$"
       },
@@ -12,34 +13,32 @@
         interval: 1,
         intervalType: "month"
       },
+      toolTip: {
+        shared: true
+      },
       data: [{
         type: "column",
+        name: "Spending",
+        legendText: "Spending",
+        showInLegend: true,
         dataPoints: []
-      }]
+      },
+      {
+        type: "column",
+        name: "Income",
+        legendText: "Income",
+        showInLegend: true,
+        dataPoints: []
+      }
+      ]
     });
     <% monthlySpending.forEach(function(item) { %>
         spendingChart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.cost  %>})
     <% }) %>
-    spendingChart.render();
-
-    var incomeChart = new CanvasJS.Chart("incomeChart",
-    {
-      axisY:{
-        prefix: "$"
-      },
-      axisX:{
-        interval: 1,
-        intervalType: "month"
-      },
-      data: [{
-        type: "column",
-        dataPoints: []
-      }]
-    });
     <% monthlyIncome.forEach(function(item) { %>
-        incomeChart.options.data[0].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
+        spendingChart.options.data[1].dataPoints.push({x: new Date(<%=  item._id.year  %>, <%=  item._id.month  %>), y: <%=  item.earnings  %>})
     <% }) %>
-    incomeChart.render();
+    spendingChart.render();
 
     var earningsChart = new CanvasJS.Chart("earningsChart",
     {
@@ -67,13 +66,6 @@
   </div>
   <div class="box">
     <div id="spendingChart" style="height: 300px; width: 100%;"></div>
-  </div>
-
-  <div class="box" id="heading">
-    <h1> Monthly Income </h1>
-  </div>
-  <div class="box">
-    <div id="incomeChart" style="height: 300px; width: 100%;"></div>
   </div>
 
   <div class="box" id="heading">
